@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct HomeView: View {
     @State private var showSettings = false
     @State private var showLocationPicker = false
 
-    @StateObject private var locVM = LocationPickerViewModel()
+    @EnvironmentObject private var api: APIClient
+    @StateObject private var weatherVM = WeatherViewModel()
+    @EnvironmentObject private var locVM: LocationPickerViewModel
 
     var body: some View {
         NavigationStack {
@@ -27,14 +30,15 @@ struct HomeView: View {
                         WeatherWidgetCard(
                             locationTitle: locVM.navTitle,
                             locationSubtitle: locVM.navSubtitle,
-                            summary: "DAYFIT 기준, 가벼운 아우터 추천",
-                            tempText: "12°",
-                            detailText: "체감 10° · 바람 약간",
-                            conditionText: "맑음",
-                            iconStyle: .sunny
+                            summary: weatherVM.summary.isEmpty ? "DAYFIT 기준으로 오늘을 준비해요" : weatherVM.summary,
+                            tempText: weatherVM.tempText,
+                            detailText: weatherVM.detailText.isEmpty ? "날씨 불러오는 중" : weatherVM.detailText,
+                            conditionText: weatherVM.conditionText,
+                            iconStyle: weatherVM.iconStyle
                         )
+                        
 
-                        // 섹션 타이틀 (오늘 이렇게 해 ❌)
+                        // 섹션 타이틀 (오늘 이렇게 해)
                         HStack {
                             Text("오늘의 추천")
                                 .font(.system(size: 16, weight: .bold))
@@ -106,13 +110,94 @@ struct HomeView: View {
                     }
                 }
             }
-            .onAppear { locVM.bootstrapIfNeeded() }
+            .onAppear {
+                Task {
+                    await syncPrimaryOrFallback()
+                    await fetchWeatherIfPossible()
+                }
+            }
+            .onChange(of: showLocationPicker) { _, isShown in
+                if isShown {
+                    locVM.loadRecentsFromServer()
+                }
+            }
+            .onChange(of: locVM.selectedCoordinate?.latitude) { _, _ in
+                Task { await fetchWeatherIfPossible() }
+            }
+            .onChange(of: locVM.selectedCoordinate?.longitude) { _, _ in
+                Task { await fetchWeatherIfPossible() }
+            }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showLocationPicker) {
                 LocationPickerSheet(vm: locVM, onClose: { showLocationPicker = false })
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
+            
         }
     }
+    
+    private func fetchWeatherIfPossible() async {
+        guard let c = locVM.selectedCoordinate else { return }
+        do {
+            let w = try await api.fetchCurrentWeather(lat: c.latitude, lon: c.longitude)
+            weatherVM.apply(w)
+        } catch {
+            // 실패해도 UI 깨지지 않게 최소 처리
+            weatherVM.detailText = "날씨 정보를 불러오지 못했어요"
+        }
+    }
+    
+    private func syncPrimaryOrFallback() async {
+        guard api.accessToken != nil else { return }
+        
+        do {
+            let res = try await api.getPrimaryLocation()
+            if let item = res.item {
+                let coord = CLLocationCoordinate2D(latitude: item.lat, longitude: item.lon)
+                locVM.applySelectionLocalOnly(
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    coordinate: coord
+                )
+                print("HomeView syncPrimary -> [\(locVM.navTitle)] to", item.title, item.lat, item.lon)
+
+                return
+            }
+
+            // 대표가 없으면 현위치로
+            locVM.useCurrentLocation()
+            print("bella")
+        } catch {
+            print("primary decode/req error:", error)
+            // 실패하면 현위치로 (원하면 여기서 유지로 바꿀 수도 있음)
+            locVM.useCurrentLocation()
+            print("bella2")
+        }
+        
+        // 토큰이 없으면 서버 primary를 못 가져오니까,
+        // 여기서 현위치로 강제하지 말고(덮어쓰기 금지) 그냥 로컬 캐시 유지.
+        // guard api.accessToken != nil else { return }
+    
+//        do {
+//            let res = try await api.getPrimaryLocation()
+//            if let item = res.item {
+//                let coord = CLLocationCoordinate2D(latitude: item.lat, longitude: item.lon)
+//                locVM.applySelectionLocalOnly(
+//                    title: item.title,
+//                    subtitle: item.subtitle,
+//                    coordinate: coord
+//                )
+//                return
+//            }
+//        } catch {
+//            // unauthorized든 뭐든 여기로 옴 -> fallback
+//        }
+        
+        
+
+        // 대표 없거나 실패하면 현위치(단, 현위치는 서버에 저장 안 함)
+//        locVM.useCurrentLocation()
+    }
+
 }
