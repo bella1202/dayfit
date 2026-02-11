@@ -52,7 +52,7 @@ struct LocationPickerSheet: View {
             }
             Button("취소", role: .cancel) { }
         } message: {
-            Text("대표주소가 없다면 현위치를 기본으로 사용해요.")
+            Text("대표주소가 없다면 현재 위치를 기본으로 사용해요.")
         }
 
         .confirmationDialog(
@@ -112,7 +112,7 @@ private extension LocationPickerSheet {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(AppColor.accent)
 
-                Text(vm.isLocating ? "현재 위치 가져오는 중..." : "현 위치로 설정")
+                Text(vm.isLocating ? "현재 위치 가져오는 중..." : "현재 위치로 설정")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.primary)
 
@@ -161,7 +161,7 @@ private extension LocationPickerSheet {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AppColor.accent.opacity(0.9))
 
-                TextField("지번/도로명/건물명으로 검색", text: $vm.query)
+                TextField("도로명, 건물명 또는 지번으로 검색", text: $vm.query)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.primary)
                     .textInputAutocapitalization(.never)

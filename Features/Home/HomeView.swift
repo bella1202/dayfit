@@ -39,17 +39,16 @@ struct HomeView: View {
                         
 
                         // 섹션 타이틀 (오늘 이렇게 해)
-                        HStack {
-                            Text("오늘의 추천")
+                        HStack(spacing: 6) {
+                            Text("오늘어때")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundStyle(.primary)
-
-                            Spacer()
 
                             Text("DAYFIT")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(AppColor.accent)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 6)
 
                         LazyVGrid(columns: [
@@ -160,44 +159,16 @@ struct HomeView: View {
                     subtitle: item.subtitle,
                     coordinate: coord
                 )
-                print("HomeView syncPrimary -> [\(locVM.navTitle)] to", item.title, item.lat, item.lon)
-
                 return
             }
 
             // 대표가 없으면 현위치로
             locVM.useCurrentLocation()
-            print("bella")
+            
         } catch {
-            print("primary decode/req error:", error)
             // 실패하면 현위치로 (원하면 여기서 유지로 바꿀 수도 있음)
             locVM.useCurrentLocation()
-            print("bella2")
         }
-        
-        // 토큰이 없으면 서버 primary를 못 가져오니까,
-        // 여기서 현위치로 강제하지 말고(덮어쓰기 금지) 그냥 로컬 캐시 유지.
-        // guard api.accessToken != nil else { return }
-    
-//        do {
-//            let res = try await api.getPrimaryLocation()
-//            if let item = res.item {
-//                let coord = CLLocationCoordinate2D(latitude: item.lat, longitude: item.lon)
-//                locVM.applySelectionLocalOnly(
-//                    title: item.title,
-//                    subtitle: item.subtitle,
-//                    coordinate: coord
-//                )
-//                return
-//            }
-//        } catch {
-//            // unauthorized든 뭐든 여기로 옴 -> fallback
-//        }
-        
-        
-
-        // 대표 없거나 실패하면 현위치(단, 현위치는 서버에 저장 안 함)
-//        locVM.useCurrentLocation()
     }
 
 }
