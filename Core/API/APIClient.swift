@@ -120,6 +120,25 @@ final class APIClient: ObservableObject {
             body: body
         )
     }
+    
+    struct MeResponse: Decodable {
+        let id: Int
+        let email: String?
+        let nickname: String?
+        let birthday: String?
+        let phone: String?
+        let provider: String?
+    }
+    
+    func getMe() async throws -> MeResponse {
+        let url = baseURL.appendingPathComponent("/v1/me")
+        let res: MeResponse = try await request(
+            url: url,
+            method: "GET",
+            body: nil
+        )
+        return res
+    }
 
     struct SignupResponse: Decodable {
         let token: String

@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct RootView: View {
-    @AppStorage("isLoggedIn") private var isLoggedIn = false
+    @EnvironmentObject private var api: APIClient
     @State private var showSplash = true
 
     var body: some View {
@@ -15,7 +15,7 @@ struct RootView: View {
             if showSplash {
                 SplashView()
             } else {
-                if isLoggedIn {
+                if api.accessToken != nil {
                     HomeView()
                 } else {
                     LoginView()
@@ -23,7 +23,6 @@ struct RootView: View {
             }
         }
         .onAppear {
-            // 스플래시 노출 시간
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 withAnimation {
                     showSplash = false

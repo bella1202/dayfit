@@ -126,7 +126,11 @@ struct HomeView: View {
             .onChange(of: locVM.selectedCoordinate?.longitude) { _, _ in
                 Task { await fetchWeatherIfPossible() }
             }
-            .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(isPresented: $showSettings) {
+                NavigationStack {
+                    SettingsView()
+                }
+            }
             .sheet(isPresented: $showLocationPicker) {
                 LocationPickerSheet(vm: locVM, onClose: { showLocationPicker = false })
                     .presentationDetents([.medium, .large])
