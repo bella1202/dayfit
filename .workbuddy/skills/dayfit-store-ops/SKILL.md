@@ -116,3 +116,28 @@ async 页面经常只渲染出侧边栏。`location.reload()` + `wait 15–18s`�
 - 越南供应范围：⏳ 移除中（"正在处理为不可用"，24h 生效）
 
 下一次接手先看 `docs/aso/NEXT-STEPS.md`。
+
+## 附录：GitHub CLI 授权与推送（本机已跑通的流程）
+
+```
+export PATH="$HOME/.local/bin:$PATH"        # gh 装在 ~/.local/bin
+```
+
+1. **必须后台启动**，前台 + 管道会被 SIGTERM(137) 杀掉：
+   `printf 'Y\n' | GH_PROMPT_DISABLED=1 gh auth login --web --hostname github.com --git-protocol https`
+   （`--git-protocol https` + `GH_PROMPT_DISABLED=1` 可免掉两个交互提示）
+2. 拿到设备码后浏览器完成授权：
+   - `/login/device/select_account` → 点 `input[type=submit]` 确认账号
+   - 码是 9 个输入框 `user-code-0..8`，**index 4 是分隔符 `-`**，填 `XXXX-XXXX`
+   - confirmation 页按钮是 `.js-oauth-authorize-btn`
+   - **坑**：按钮可能在视口外（y=874），先 `scrollIntoView({block:'center'})` 重取坐标再用 CDP `Input.dispatchMouseEvent` 点击；合成 click 无效
+3. 授权后 `gh auth setup-git`，否则 `git push` 报 "could not read Username"。
+
+**权限**：浏览器登录的是 `itzhaolei`，仓库 owner 是 `bella1202`，直接 push 会 403。
+仓库是 PUBLIC，走 fork + PR：
+```
+gh repo fork bella1202/dayfit --remote-name fork --clone=false   # 注意：不会真加 remote
+git remote add fork https://github.com/itzhaolei/dayfit-1.git    # fork 名是 dayfit-1
+git push fork main
+gh pr create --repo bella1202/dayfit --base main --head itzhaolei:main
+```
